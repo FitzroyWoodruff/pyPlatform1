@@ -38,6 +38,48 @@ VELOCITY = 5
 #create the pygame window
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 
+# define the player class
+class Player(pygame.sprite.Sprite):
+    RED = (255, 0, 0)
+    # set Gravity
+    GRAVITY = 1
+    
+    #object initialization
+    def __init__(self, x, y, width, height):
+        self.rect = pygame.Rect(x, y, width, height)
+        #set the x and y velocity of the player
+        self.x_velocity = 0
+        self.y_velocity = 0
+        self.mask = None
+        self.direction = "left"
+        self.animation_count = 0
+        self.fall_count = 0
+        
+    def move(self, displacement_x, displacement_y):
+        self.rect.x += displacement_x
+        self.rect.y += displacement_y
+        
+    def move_left(self, velocity):
+        self.x_velocity = -velocity
+        if self.direction != "left":
+            self.direction = "left"
+            self.animation_count = 0
+        
+    def move_right(self, velocity):
+        self.x_velocity = velocity
+        if self.direction != "right":
+            self.direction = "right"
+            self.animation_count = 0
+            
+    def update(self, fps):
+        self.y_velocity += min(1, (self.fall_count / fps) * self.GRAVITY)
+        self.move(self.x_velocity, self.y_velocity)
+        
+        self.fall_count += 1
+        
+    def draw(self, window):
+        pygame.draw.rect(window, self.RED, self.rect)
+
 # generate the background
 def get_background(name):
     #load the images in background folder
@@ -57,12 +99,23 @@ def get_background(name):
     return tiles, image
 
 # define the draw function
-def draw(window, background, bg_image):
+def draw(window, background, bg_image, player):
     for tile in background:
         # add image to window
         window.blit(bg_image, tile)
-    
+    player.draw(window)
     pygame.display.update()
+
+# Handle player movement
+def handle_movement(player):
+    keys = pygame.key.get_pressed()
+    
+    player.x_velocity = 0
+    
+    if keys[pygame.K_LEFT]:
+        player.move_left(VELOCITY)
+    if keys[pygame.K_RIGHT]:
+        player.move_right(VELOCITY)
 
 # main function
 def main(window):
@@ -70,6 +123,9 @@ def main(window):
     clock = pygame.time.Clock()
     # set the level background
     background, bg_image = get_background("Pyramid.jpg")
+    
+    #init player
+    player = Player(100,100,50,50)
     
     # Running boolean
     run = True
@@ -85,8 +141,10 @@ def main(window):
             if event.type == pygame.QUIT:
                 run = False
                 break
-            
-        draw(window, background, bg_image)
+        
+        player.update(FPS)
+        handle_movement(player)    
+        draw(window, background, bg_image, player)
     pygame.quit()
     quit()
 
